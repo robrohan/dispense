@@ -19,13 +19,15 @@ test:
 
 # Run the app locally
 run:
-	@mkdir -p build
+	@mkdir -p public
 	@go run cmd/dispense/main.go
 
+clean:
+	rm -rf build
+
 # Build the app to distribute
-build:
+build: clean
 	@mkdir -p build
 	@go build -o build/dispense \
 		-ldflags "-X main.build=$(HASH)" \
 		cmd/dispense/main.go
-	cp -R public/assets build/assets

@@ -73,7 +73,7 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 	root := cfg.Base.Input
 	files, err := FilePathWalkDir(root)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	for _, e := range files {
@@ -83,7 +83,7 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 
 		b, err := os.ReadFile(e)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 
 		log.Printf("%s\n", fileName)
@@ -94,7 +94,7 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 		// open output file
 		fo, err := os.Create(cfg.Base.Output + "/" + fileName + ".html")
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
 		defer fo.Close()
 
@@ -107,7 +107,7 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 			// read a chunk
 			n, err := r.Read(buf)
 			if err != nil && err != io.EOF {
-				panic(err)
+				log.Fatalln(err)
 			}
 			if n == 0 {
 				break
@@ -115,14 +115,13 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 
 			// write a chunk
 			if _, err := w.Write(buf[:n]); err != nil {
-				panic(err)
+				log.Fatalln(err)
 			}
 		}
 
 		if err = w.Flush(); err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
-
 	}
 }
 
@@ -148,7 +147,7 @@ func run() error {
 	}
 
 	renderAllMarkdown(&cfg, log)
-	renderTemplate(log)
+	renderTemplate(&cfg, log)
 
 	return nil
 }
