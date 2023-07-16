@@ -18,11 +18,14 @@ test:
 	@go test ./...
 
 # Run the app locally
-run:
+run: clean
+	@rm -rf public
 	@mkdir -p public
 	@go run cmd/dispense/main.go
+	@cp -R hive/assets public/assets
 
 clean:
+	rm -rf public
 	rm -rf build
 
 # Build the app to distribute

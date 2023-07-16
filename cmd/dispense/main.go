@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -14,16 +13,66 @@ import (
 
 	"github.com/ardanlabs/conf"
 	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/pkg/errors"
 	models "github.com/robrohan/dispense/internals"
+	"gopkg.in/yaml.v3"
 )
 
-// var mds = `# header
-// Sample text.
-// [link](http://example.com)
-// `
+type FrontMatter struct {
+	ast.Leaf
+	Data map[interface{}]interface{}
+}
+
+///////////////////////////////////////////////////////
+
+func parseFrontMatter(data []byte) (ast.Node, []byte, int) {
+	var frontMark = []byte("---\n")
+
+	if !bytes.HasPrefix(data, frontMark) || bytes.HasPrefix(data, []byte("---\n\n")) {
+		return nil, nil, 0
+	}
+
+	i := len(frontMark)
+	end := bytes.Index(data[i:], []byte("---\n\n"))
+	if end < 0 {
+		return nil, data, 0
+	}
+	end = end + i
+
+	matter := make(map[interface{}]interface{})
+	err := yaml.Unmarshal(data[i:end], &matter)
+	if err != nil {
+		panic(err)
+	}
+
+	res := &FrontMatter{
+		Data: matter,
+	}
+	return res, nil, end
+}
+
+func parserHook(data []byte) (ast.Node, []byte, int) {
+	if node, d, n := parseFrontMatter(data); node != nil {
+		return node, d, n
+	}
+	return nil, nil, 0
+}
+
+func frontMatterRenderHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
+	if _, ok := node.(*FrontMatter); ok {
+		if entering {
+			// fmt.Printf("%v\n", node.(*FrontMatter).Data)
+			io.WriteString(w, "\n\n")
+		}
+		return ast.GoToNext, true
+	}
+	return ast.GoToNext, false
+}
+
+///////////////////////////////////////////////////////
 
 func FilePathWalkDir(root string) ([]string, error) {
 	var files []string
@@ -36,38 +85,52 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
-func mdToHTML(md []byte) []byte {
-	// create markdown parser with extensions
-	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+func mdToHTML(md []byte) ([]byte, string) {
+	template := "post"
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock | parser.Footnotes
 	p := parser.NewWithExtensions(extensions)
+	p.Opts.ParserHook = parserHook
+
 	doc := p.Parse(md)
+
+	// if there is frontmatter is should be the first node
+	root := doc.GetChildren()
+	if root != nil {
+		fm := root[0].(*FrontMatter).Data
+		// fmt.Printf("-->%v\n", fm["template"])
+		template = fm["template"].(string)
+	}
 
 	// create HTML renderer with extensions
 	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
+	opts := html.RendererOptions{
+		Flags:          htmlFlags,
+		RenderNodeHook: frontMatterRenderHook,
+	}
 	renderer := html.NewRenderer(opts)
 
-	return markdown.Render(doc, renderer)
+	return markdown.Render(doc, renderer), template
 }
 
-func renderTemplate(cfg *models.Config, log *log.Logger) {
-	templateFile := cfg.Template.Directory + "/" + cfg.Template.Listing + "." + cfg.Template.Extension
-	template, err := template.ParseFiles(templateFile)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	listings := map[string]string{
-		"basic":               "basic.html",
-		"Français":            "Français.html",
-		"french_visual_cards": "french_visual_cards.html",
-	}
-	fo, err := os.Create(cfg.Base.Output + "/" + cfg.Template.Listing + ".html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer fo.Close()
-	template.Execute(fo, listings)
-}
+// func renderTemplate(cfg *models.Config, log *log.Logger) {
+// 	templateFile := cfg.Template.Directory + "/" + cfg.Template.Listing + "." + cfg.Template.Extension
+// 	template, err := template.ParseFiles(templateFile)
+// 	if err != nil {
+// 		log.Fatalln(err)
+// 	}
+// 	listings := map[string]string{
+// 		"basic":               "basic.html",
+// 		"Français":            "Français.html",
+// 		"french_visual_cards": "french_visual_cards.html",
+// 	}
+// 	fo, err := os.Create(cfg.Base.Output + "/" + cfg.Template.Listing + ".html")
+// 	if err != nil {
+// 		log.Fatalln(err)
+// 	}
+// 	defer fo.Close()
+
+// 	template.Execute(fo, listings)
+// }
 
 func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 	root := cfg.Base.Input
@@ -86,42 +149,26 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 			log.Fatalln(err)
 		}
 
-		log.Printf("%s\n", fileName)
+		htmlBytes, templateTitle := mdToHTML(b)
 
-		// make a read buffer
-		r := bytes.NewReader(mdToHTML(b))
-
-		// open output file
-		fo, err := os.Create(cfg.Base.Output + "/" + fileName + ".html")
+		templateFile := cfg.Template.Directory + "/" + templateTitle + "." + cfg.Template.Extension
+		log.Printf("using template file %s\n", templateFile)
+		template, err := template.ParseFiles(templateFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		pageVars := map[string]string{
+			"postData": string(htmlBytes),
+		}
+		output := cfg.Base.Output + "/" + fileName + ".html"
+		log.Printf("output file %s\n", output)
+		fo, err := os.Create(output)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		defer fo.Close()
 
-		// make a write buffer
-		w := bufio.NewWriter(fo)
-
-		// make a buffer to keep chunks that are read
-		buf := make([]byte, 1024)
-		for {
-			// read a chunk
-			n, err := r.Read(buf)
-			if err != nil && err != io.EOF {
-				log.Fatalln(err)
-			}
-			if n == 0 {
-				break
-			}
-
-			// write a chunk
-			if _, err := w.Write(buf[:n]); err != nil {
-				log.Fatalln(err)
-			}
-		}
-
-		if err = w.Flush(); err != nil {
-			log.Fatalln(err)
-		}
+		template.Execute(fo, pageVars)
 	}
 }
 
@@ -147,7 +194,7 @@ func run() error {
 	}
 
 	renderAllMarkdown(&cfg, log)
-	renderTemplate(&cfg, log)
+	// renderTemplate(&cfg, log)
 
 	return nil
 }

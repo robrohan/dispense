@@ -1,5 +1,6 @@
 ---
 tags: french_visual
+template: post
 ---
 
 ![1855ac555f50b751.png|256](1855ac555f50b751.png)

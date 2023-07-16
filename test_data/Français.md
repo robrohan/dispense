@@ -1,5 +1,6 @@
 ---
 tags: [french,input]
+template: post
 ---
 
 Il était une fois, dans un monde lointain, un petit garçon nommé Pierre. Pierre vivait dans une petite maison près de la mer avec ses parents. Il aimait lire des livres de science-fiction et rêvait de construire des machines extraordinaires.

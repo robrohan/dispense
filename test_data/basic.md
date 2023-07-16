@@ -2,6 +2,7 @@
 author: rob
 date: 2022-02-02
 front_matter: 🥾🐛气!
+template: post
 ---
 
 # H1
