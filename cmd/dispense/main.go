@@ -97,8 +97,12 @@ func mdToHTML(md []byte) ([]byte, string) {
 	root := doc.GetChildren()
 	if root != nil {
 		fm := root[0].(*FrontMatter).Data
-		// fmt.Printf("-->%v\n", fm["template"])
-		template = fm["template"].(string)
+		fmt.Printf("-->%v\n", fm["template"])
+		if fm["template"] != nil {
+			template = fm["template"].(string)
+		} else {
+			template = "post"
+		}
 	}
 
 	// create HTML renderer with extensions
