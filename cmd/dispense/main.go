@@ -36,7 +36,7 @@ func parseFrontMatter(data []byte) (ast.Node, []byte, int) {
 	}
 
 	i := len(frontMark)
-	end := bytes.Index(data[i:], []byte("---\n\n"))
+	end := bytes.Index(data[i:], []byte("---"))
 	if end < 0 {
 		return nil, data, 0
 	}
@@ -51,7 +51,8 @@ func parseFrontMatter(data []byte) (ast.Node, []byte, int) {
 	res := &FrontMatter{
 		Data: matter,
 	}
-	return res, nil, end
+	// +3 because of the frontmatter "---"
+	return res, nil, (end+3)
 }
 
 func parserHook(data []byte) (ast.Node, []byte, int) {
