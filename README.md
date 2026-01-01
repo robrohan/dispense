@@ -1,7 +1,7 @@
 
 # Dispense
 
-Dispense is a simple utility that takes a directory of markdown files and transforms the files into a simple static website. Dispensed is similar to applications like [Hugo](https://gohugo.io/) or [Jekyll](https://jekyllrb.com/), but Dispense is purposefully much simplier than those applications. Its main use case, for me, is to transform a directory from [Obsidian](https://obsidian.md/) and create an uploadable static website.
+Dispense is a simple utility that takes a directory of markdown files and transforms the files into a simple static website. Dispensed is similar to applications like [Hugo](https://gohugo.io/) or [Jekyll](https://jekyllrb.com/), but Dispense is purposefully much simpler than those applications. Its main use case, for me, is to transform a directory from [Obsidian](https://obsidian.md/) and create a static website that you can upload.
 
 Dispense works by using a markdown file's front matter to define a post's metadata (template, title, date, author, etc) and then generates html files from the file. The template files are stored in a directory called _hive_ (you can think of that directory as a theme if you like).
 
@@ -23,7 +23,7 @@ template: page
 ---
 ```
 
-_template_ and _title_ are the most important. Then just run the application against a directory of markdown files (Dispense only processes the top level files, and the name of the markdown file becomes the name of the html file).
+_template_ and _title_ are the most important. Where template here would use the `page.tpl` file within the _hive_ directory. After the front matter and markdown file is created, you can run the application against a directory of markdown files (Dispense only processes the top level files, and the name of the markdown file becomes the name of the html file).
 
 A simple example of using Dispensed:
 
