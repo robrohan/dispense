@@ -64,7 +64,6 @@ func parserHook(data []byte) (ast.Node, []byte, int) {
 func frontMatterRenderHook(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
 	if _, ok := node.(*FrontMatter); ok {
 		if entering {
-			// fmt.Printf("%v\n", node.(*FrontMatter).Data)
 			io.WriteString(w, "\n\n")
 		}
 		return ast.GoToNext, true
@@ -117,25 +116,6 @@ func mdToHTML(md []byte) ([]byte, string, map[interface{}]interface{}) {
 	return markdown.Render(doc, renderer), template, fm
 }
 
-// func renderTemplate(cfg *models.Config, log *log.Logger) {
-// 	templateFile := cfg.Template.Directory + "/" + cfg.Template.Listing + "." + cfg.Template.Extension
-// 	template, err := template.ParseFiles(templateFile)
-// 	if err != nil {
-// 		log.Fatalln(err)
-// 	}
-// 	listings := map[string]string{
-// 		"basic":               "basic.html",
-// 		"Français":            "Français.html",
-// 		"french_visual_cards": "french_visual_cards.html",
-// 	}
-// 	fo, err := os.Create(cfg.Base.Output + "/" + cfg.Template.Listing + ".html")
-// 	if err != nil {
-// 		log.Fatalln(err)
-// 	}
-// 	defer fo.Close()
-// 	template.Execute(fo, listings)
-// }
-
 func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 	root := cfg.Base.Input
 	files, err := FilePathWalkDir(root)
@@ -155,7 +135,6 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 
 		htmlBytes, templateTitle, fm := mdToHTML(b)
 
-		// log.Printf("%v", fm)
 		templateFile := cfg.Template.Directory + "/" + templateTitle + "." + cfg.Template.Extension
 		log.Printf("using template file %s\n", templateFile)
 		template, err := template.ParseFiles(templateFile)
@@ -200,8 +179,6 @@ func run() error {
 	}
 
 	renderAllMarkdown(&cfg, log)
-	// renderTemplate(&cfg, log)
-
 	return nil
 }
 
