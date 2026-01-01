@@ -1,16 +1,33 @@
 ---
 author: rob
-date: 2022-02-02
-front_matter: 🥾🐛气!
-template: post
+date: 2026-01-01
+title: 🥾🐛气!
+template: page
 ---
 
 # H1
+
+Example of an H1
+
 ## H2
+
+Example of an H2
+
 ### H3
+
+Example of an H3
+
 #### H4
+
+Example of an H4
+
 ##### H5
+
+Example of an H5
+
 ###### H6
+
+Example of an H6
 
 some **bold text** here
 
@@ -67,6 +84,9 @@ _that with things_ with more words here that will do other things and
 stuff. Oh and [a link here](http://www.yadda.com?x=3&z=1) is a hyperlink. 
 And [this][3] is another one. and [a footnote][^1]
 
+$$
+x^2 = \sum^{n}_{n=0}\left(n^y\right)
+$$
 
 [3]: http://this.com
 [^1]: This is stuff that is in the foot note.
