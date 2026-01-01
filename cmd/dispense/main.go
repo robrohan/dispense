@@ -85,7 +85,7 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
-func mdToHTML(md []byte) ([]byte, string) {
+func mdToHTML(md []byte) ([]byte, string, map[interface{}]interface{}) {
 	template := "post"
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock | parser.Footnotes
 	p := parser.NewWithExtensions(extensions)
@@ -93,11 +93,12 @@ func mdToHTML(md []byte) ([]byte, string) {
 
 	doc := p.Parse(md)
 
+	var fm = make(map[interface{}]interface{})
+
 	// if there is frontmatter is should be the first node
 	root := doc.GetChildren()
 	if root != nil {
-		fm := root[0].(*FrontMatter).Data
-		fmt.Printf("-->%v\n", fm["template"])
+		fm = root[0].(*FrontMatter).Data
 		if fm["template"] != nil {
 			template = fm["template"].(string)
 		} else {
@@ -113,7 +114,7 @@ func mdToHTML(md []byte) ([]byte, string) {
 	}
 	renderer := html.NewRenderer(opts)
 
-	return markdown.Render(doc, renderer), template
+	return markdown.Render(doc, renderer), template, fm
 }
 
 // func renderTemplate(cfg *models.Config, log *log.Logger) {
@@ -132,7 +133,6 @@ func mdToHTML(md []byte) ([]byte, string) {
 // 		log.Fatalln(err)
 // 	}
 // 	defer fo.Close()
-
 // 	template.Execute(fo, listings)
 // }
 
@@ -153,17 +153,19 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 			log.Fatalln(err)
 		}
 
-		htmlBytes, templateTitle := mdToHTML(b)
+		htmlBytes, templateTitle, fm := mdToHTML(b)
 
+		// log.Printf("%v", fm)
 		templateFile := cfg.Template.Directory + "/" + templateTitle + "." + cfg.Template.Extension
 		log.Printf("using template file %s\n", templateFile)
 		template, err := template.ParseFiles(templateFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		pageVars := map[string]string{
-			"postData": string(htmlBytes),
-		}
+
+		// Add in the HTML rendered text
+		fm["postData"] = string(htmlBytes)
+
 		output := cfg.Base.Output + "/" + fileName + ".html"
 		log.Printf("output file %s\n", output)
 		fo, err := os.Create(output)
@@ -172,7 +174,7 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 		}
 		defer fo.Close()
 
-		template.Execute(fo, pageVars)
+		template.Execute(fo, fm)
 	}
 }
 
