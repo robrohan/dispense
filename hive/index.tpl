@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="assets/main.css">
+	<title>{{ .title }}</title>
+	<link rel="stylesheet" href="assets/pico.min.css">
+	<link rel="stylesheet" href="assets/katex.min.css">
+	<script defer src="assets/katex.min.js"></script>
+	<script defer src="assets/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
     </head>
     <body>
-        <ul>
-        {{range $key, $val := .}}
-        <li><a href="{{$val}}">{{$key}}</a></li>
-        {{end}}
-        </ul>
-    <script src="assets/main.js"></script>
+      <main class="container">
+	{{ .postData }}
+      </main>
+      <script src="assets/main.js"></script>
     </body>
 </html>
