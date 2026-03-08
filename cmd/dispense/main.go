@@ -45,7 +45,8 @@ func parseFrontMatter(data []byte) (ast.Node, []byte, int) {
 	matter := make(map[interface{}]interface{})
 	err := yaml.Unmarshal(data[i:end], &matter)
 	if err != nil {
-		panic(err)
+		// Skip bad front matter rather than crashing
+		return nil, data, 0
 	}
 
 	res := &FrontMatter{
@@ -77,6 +78,9 @@ func frontMatterRenderHook(w io.Writer, node ast.Node, entering bool) (ast.WalkS
 func FilePathWalkDir(root string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if !info.IsDir() && path.Ext(p) == ".md" {
 			files = append(files, p)
 		}
@@ -95,14 +99,14 @@ func mdToHTML(md []byte) ([]byte, string, map[interface{}]interface{}) {
 
 	var fm = make(map[interface{}]interface{})
 
-	// if there is frontmatter is should be the first node
+	// if there is frontmatter it should be the first node
 	root := doc.GetChildren()
 	if root != nil {
-		fm = root[0].(*FrontMatter).Data
-		if fm["template"] != nil {
-			template = fm["template"].(string)
-		} else {
-			template = "post"
+		if fmNode, ok := root[0].(*FrontMatter); ok {
+			fm = fmNode.Data
+			if t, ok := fm["template"].(string); ok {
+				template = t
+			}
 		}
 	}
 
@@ -154,7 +158,9 @@ func renderAllMarkdown(cfg *models.Config, log *log.Logger) {
 		}
 		defer fo.Close()
 
-		template.Execute(fo, fm)
+		if err := template.Execute(fo, fm); err != nil {
+			log.Printf("error executing template %s: %v\n", templateFile, err)
+		}
 	}
 }
 
