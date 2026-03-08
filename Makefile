@@ -15,7 +15,7 @@ install:
 
 # Test the application
 test:
-	@go test ./...
+	@go test -v ./... 
 
 # Run the app locally
 run: clean
